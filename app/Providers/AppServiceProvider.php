@@ -21,6 +21,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // OpenID Connect scopes advertised by the /userinfo + discovery layer.
+        Passport::tokensCan([
+            'openid' => 'Verify your identity',
+            'profile' => 'See your name and profile info',
+            'email' => 'See your email address',
+        ]);
+
         // Render Passport's OAuth consent screen as a branded Inertia page
         // instead of the default Blade view, so it matches the Spurs design.
         Passport::authorizationView(function ($parameters) {
