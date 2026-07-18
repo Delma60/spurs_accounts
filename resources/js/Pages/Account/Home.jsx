@@ -1,9 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import {
     House, User, ShieldCheck, Blocks, LogOut, Mail, KeyRound,
     Smartphone, Check, ChevronRight, ChevronLeft, BadgeCheck,
+    LogIn, UserPlus, History,
 } from 'lucide-react';
+
+const EVENT_ICON = {
+    registered: UserPlus,
+    login: LogIn,
+    password_changed: KeyRound,
+    password_reset: KeyRound,
+    email_verified: BadgeCheck,
+    app_connected: Blocks,
+    app_revoked: Blocks,
+};
 import Field from '@/Components/Field';
 
 const NAV = [
@@ -13,7 +24,7 @@ const NAV = [
     { id: 'apps', label: 'Connected apps', Icon: Blocks, desc: 'Apps with account access' },
 ];
 
-export default function AccountHome({ user, connectedApps }) {
+export default function AccountHome({ user, connectedApps, securityEvents }) {
     const [section, setSection] = useState('home');
     const initial = (user.name || '?').charAt(0).toUpperCase();
 
@@ -26,10 +37,10 @@ export default function AccountHome({ user, connectedApps }) {
                     <span className="brand__mark">S</span>
                     <span>Spurs <small>Account</small></span>
                 </div>
-                <button className="acct-avatar" title={user.email} onClick={() => setSection('personal')}>
-                    {initial}
-                </button>
+                <AvatarMenu user={user} initial={initial} onManage={() => setSection('home')} />
             </header>
+
+            {!user.email_verified && <VerifyBanner />}
 
             <div className="acct-body">
                 {/* md/lg: sidebar navigation */}
@@ -59,10 +70,73 @@ export default function AccountHome({ user, connectedApps }) {
                     )}
                     {section === 'home' && <HomeSection user={user} apps={connectedApps} onGo={setSection} />}
                     {section === 'personal' && <PersonalSection user={user} />}
-                    {section === 'security' && <SecuritySection user={user} apps={connectedApps} onGo={setSection} />}
+                    {section === 'security' && <SecuritySection user={user} apps={connectedApps} events={securityEvents} onGo={setSection} />}
                     {section === 'apps' && <AppsSection apps={connectedApps} />}
                 </main>
             </div>
+        </div>
+    );
+}
+
+function AvatarMenu({ user, initial, onManage }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        if (!open) return;
+        const onDown = (e) => ref.current && !ref.current.contains(e.target) && setOpen(false);
+        const onKey = (e) => e.key === 'Escape' && setOpen(false);
+        document.addEventListener('mousedown', onDown);
+        document.addEventListener('keydown', onKey);
+        return () => {
+            document.removeEventListener('mousedown', onDown);
+            document.removeEventListener('keydown', onKey);
+        };
+    }, [open]);
+
+    return (
+        <div className="acct-menu" ref={ref}>
+            <button className="acct-avatar" title={user.email} aria-haspopup="menu" aria-expanded={open}
+                onClick={() => setOpen((o) => !o)}>
+                {initial}
+            </button>
+            {open && (
+                <div className="acct-menu__pop" role="menu">
+                    <div className="acct-menu__id">
+                        <div className="acct-menu__name">{user.name}</div>
+                        <div className="acct-menu__email">{user.email}</div>
+                    </div>
+                    <button className="acct-menu__item" onClick={() => { setOpen(false); onManage(); }}>
+                        <User size={16} /> Manage your account
+                    </button>
+                    <button className="acct-menu__item" onClick={() => router.post('/logout')}>
+                        <LogOut size={16} /> Sign out
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function VerifyBanner() {
+    const { post, processing } = useForm({});
+    const [sent, setSent] = useState(false);
+    const resend = () => post('/email/verification-notification', {
+        preserveScroll: true,
+        onSuccess: () => setSent(true),
+    });
+
+    return (
+        <div className="verify-banner">
+            <Mail size={18} />
+            <span>Verify your email address to fully secure your account.</span>
+            {sent ? (
+                <span className="verify-banner__sent"><Check size={15} /> Link sent — check your inbox</span>
+            ) : (
+                <button className="verify-banner__btn" onClick={resend} disabled={processing}>
+                    {processing ? 'Sending…' : 'Send verification link'}
+                </button>
+            )}
         </div>
     );
 }
@@ -168,7 +242,7 @@ function PersonalSection({ user }) {
     );
 }
 
-function SecuritySection({ user, apps, onGo }) {
+function SecuritySection({ user, apps, events = [], onGo }) {
     const { data, setData, put, processing, errors, reset, recentlySuccessful } = useForm({
         current_password: '', password: '', password_confirmation: '',
     });
@@ -240,6 +314,34 @@ function SecuritySection({ user, apps, onGo }) {
                         </button>
                     </div>
                 </form>
+            </div>
+
+            <div className="acct-card">
+                <div className="acct-card__head">
+                    <h2>Recent security activity</h2>
+                    <p>Recent events on your Spurs account</p>
+                </div>
+                {events.length === 0 ? (
+                    <div className="empty">
+                        <div className="empty__ico"><History size={30} /></div>
+                        No recent activity yet.
+                    </div>
+                ) : (
+                    events.map((ev) => {
+                        const Icon = EVENT_ICON[ev.type] ?? History;
+                        const meta = [ev.device, ev.ip].filter(Boolean).join(' · ');
+                        return (
+                            <div className="signin-row" key={ev.id}>
+                                <span className="signin-row__ico"><Icon size={20} /></span>
+                                <div className="signin-row__meta">
+                                    <div className="signin-row__label">{ev.label}</div>
+                                    <div className="signin-row__value">{meta || 'Unknown device'}</div>
+                                </div>
+                                <span className="event-time">{ev.at}</span>
+                            </div>
+                        );
+                    })
+                )}
             </div>
         </>
     );
