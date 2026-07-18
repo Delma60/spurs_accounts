@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SecurityEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
@@ -22,6 +23,7 @@ class AccountController extends Controller
                 'created_at' => $user->created_at?->format('M j, Y'),
             ],
             'connectedApps' => $this->connectedApps($request),
+            'securityEvents' => $this->securityEvents($request),
         ]);
     }
 
@@ -46,6 +48,7 @@ class AccountController extends Controller
         ]);
 
         $request->user()->update(['password' => Hash::make($data['password'])]);
+        SecurityEvent::record($request->user(), 'password_changed', $request);
 
         return back();
     }
@@ -56,6 +59,8 @@ class AccountController extends Controller
         $request->user()->tokens()
             ->where('client_id', $clientId)
             ->update(['revoked' => true]);
+
+        SecurityEvent::record($request->user(), 'app_revoked', $request);
 
         return back();
     }
@@ -76,6 +81,23 @@ class AccountController extends Controller
                 'authorized_at' => $tokens->min('created_at')?->format('M j, Y'),
             ])
             ->values()
+            ->all();
+    }
+
+    /** The user's recent security activity for the Security section. */
+    private function securityEvents(Request $request): array
+    {
+        return $request->user()->securityEvents()
+            ->limit(10)
+            ->get()
+            ->map(fn (SecurityEvent $e) => [
+                'id' => $e->id,
+                'type' => $e->type,
+                'label' => $e->label(),
+                'ip' => $e->ip,
+                'device' => $e->device,
+                'at' => $e->created_at?->diffForHumans(),
+            ])
             ->all();
     }
 }

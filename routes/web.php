@@ -1,9 +1,12 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\EmailVerificationNotificationController;
+use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\OidcController;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +28,13 @@ Route::middleware('auth')->group(function () {
     Route::put('/me/profile', [AccountController::class, 'updateProfile'])->name('me.profile');
     Route::put('/me/password', [AccountController::class, 'updatePassword'])->name('me.password');
     Route::delete('/me/apps/{clientId}', [AccountController::class, 'revokeApp'])->name('me.apps.revoke');
+
+    // Email verification.
+    Route::get('/email/verify', EmailVerificationPromptController::class)->name('verification.notice');
+    Route::get('/email/verify/{id}/{hash}', VerifyEmailController::class)
+        ->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+    Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+        ->middleware('throttle:6,1')->name('verification.send');
 });
 
 // ---- OpenID Connect provider endpoints ----

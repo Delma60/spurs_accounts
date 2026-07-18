@@ -8,9 +8,9 @@ import Field from '@/Components/Field';
 
 const NAV = [
     { id: 'home', label: 'Home', Icon: House },
-    { id: 'personal', label: 'Personal info', Icon: User },
-    { id: 'security', label: 'Security & sign-in', Icon: ShieldCheck },
-    { id: 'apps', label: 'Connected apps', Icon: Blocks },
+    { id: 'personal', label: 'Personal info', Icon: User, desc: 'Your name and email' },
+    { id: 'security', label: 'Security & sign-in', Icon: ShieldCheck, desc: 'Password and protection' },
+    { id: 'apps', label: 'Connected apps', Icon: Blocks, desc: 'Apps with account access' },
 ];
 
 export default function AccountHome({ user, connectedApps }) {
@@ -32,6 +32,7 @@ export default function AccountHome({ user, connectedApps }) {
             </header>
 
             <div className="acct-body">
+                {/* md/lg: sidebar navigation */}
                 <nav className="acct-nav">
                     {NAV.map(({ id, label, Icon }) => (
                         <button
@@ -43,13 +44,14 @@ export default function AccountHome({ user, connectedApps }) {
                             {label}
                         </button>
                     ))}
-                    <button className="acct-nav__item is-signout" onClick={() => router.post('/logout')}>
+                    <button className="acct-nav__item" onClick={() => router.post('/logout')}>
                         <span className="acct-nav__ico"><LogOut size={19} /></span>
                         Sign out
                     </button>
                 </nav>
 
                 <main className="acct-main">
+                    {/* sm/xs only: back to the card menu */}
                     {section !== 'home' && (
                         <button className="acct-back" onClick={() => setSection('home')}>
                             <ChevronLeft size={18} /> Back
@@ -72,26 +74,29 @@ function HomeSection({ user, apps, onGo }) {
             <div className="acct-hero">
                 <div className="acct-hero__avatar">{initial}</div>
                 <h1>Welcome, {user.name.split(' ')[0]}</h1>
-                <p>Manage your info, security and connected apps for Spurs Cloud.</p>
+                <p>Manage your info, security and connected apps for Spurs.</p>
             </div>
 
-            {/* sm/xs: the sidebar shows here as a card of section rows (like Google My Account) */}
+            {/* sm/xs: the sidebar's items render here as a card of section rows */}
             <div className="acct-card navlist-card only-mobile">
-                {NAV.filter((n) => n.id !== 'home').map(({ id, label, Icon }) => (
+                {NAV.filter((n) => n.id !== 'home').map(({ id, label, Icon, desc }) => (
                     <button key={id} className="navlist__row" onClick={() => onGo(id)}>
                         <span className="navlist__ico"><Icon size={20} /></span>
-                        <span className="navlist__label">{label}</span>
+                        <span className="navlist__text">
+                            <span className="navlist__label">{label}</span>
+                            <span className="navlist__desc">{desc}</span>
+                        </span>
                         <ChevronRight size={18} className="navlist__chev" />
                     </button>
                 ))}
                 <button className="navlist__row" onClick={() => router.post('/logout')}>
                     <span className="navlist__ico"><LogOut size={20} /></span>
-                    <span className="navlist__label">Sign out</span>
+                    <span className="navlist__text"><span className="navlist__label">Sign out</span></span>
                     <ChevronRight size={18} className="navlist__chev" />
                 </button>
             </div>
 
-            {/* md/lg: richer summary cards alongside the sidebar */}
+            {/* md/lg: summary cards beside the sidebar */}
             <div className="only-desktop">
                 <div className="acct-card">
                     <div className="acct-card__head"><h2>Personal info</h2><p>Basic info like your name and email</p></div>

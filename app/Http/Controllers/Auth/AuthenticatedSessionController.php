@@ -33,6 +33,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         $request->session()->regenerate();
+        \App\Models\SecurityEvent::record($request->user(), 'login', $request);
 
         // Return to the OAuth authorize flow if we interrupted one, else home.
         return redirect()->intended('/');

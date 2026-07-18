@@ -41,6 +41,7 @@ class NewPasswordController extends Controller
                 ])->save();
 
                 event(new PasswordReset($user));
+                \App\Models\SecurityEvent::record($user, 'password_reset', $request);
             }
         );
 

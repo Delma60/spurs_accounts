@@ -23,20 +23,13 @@
   border: none; cursor: pointer;
 }
 
-/* Body layout: sidebar + content */
-.acct-body {
-  /* max-width: 1040px; margin: 0 auto; */
-  display: grid; grid-template-columns: 240px 1fr; gap: 32px;
-  padding: 32px 24px 64px;
-}
-/* md/lg: sidebar + content. sm/xs: hide sidebar, navigate via body cards. */
-@media (max-width: 768px) {
-  .acct-body { grid-template-columns: 1fr; gap: 8px; padding: 16px 14px 56px; }
-  .acct-nav { display: none; }
-  .acct-back { display: inline-flex; }
-}
+/* Show/hide utilities (base). The sm/xs media query below overrides these,
+ * so these MUST come first for the cascade to resolve correctly. */
+.only-mobile { display: none; }
+.only-desktop { display: block; }
 
-/* Mobile "back to menu" affordance (hidden on desktop where the sidebar exists) */
+/* "Back to menu" affordance: hidden on md/lg (the sidebar navigates),
+ * shown on sm/xs by the media query below. */
 .acct-back {
   display: none;
   align-items: center; gap: 6px;
@@ -48,12 +41,14 @@
 }
 .acct-back:hover { background: var(--brand-soft); border-color: transparent; }
 
-/* Show/hide by viewport */
-.only-mobile { display: none; }
-@media (max-width: 768px) {
-  .only-mobile { display: block; }
-  .only-desktop { display: none; }
+/* Body: md/lg = sidebar + content; sm/xs = single column (nav becomes a body card) */
+.acct-body {
+  /* max-width: 1000px; margin: 0 auto; */
+  display: grid; grid-template-columns: 240px 1fr; gap: 32px;
+  padding: 32px 24px 64px;
 }
+/* NOTE: the sm/xs @media block lives near the END of this file, after all the
+ * base component rules, so its overrides win the cascade. Do not add one here. */
 
 /* Mobile section list (the sidebar rendered as a card of rows) */
 .navlist-card { padding: 8px; }
@@ -65,7 +60,9 @@
 .navlist__row:first-child { border-top: none; }
 .navlist__row:hover { background: var(--brand-soft); }
 .navlist__ico { width: 40px; height: 40px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; flex: none; }
-.navlist__label { flex: 1; font-size: 15px; font-weight: 500; }
+.navlist__text { flex: 1; min-width: 0; }
+.navlist__label { display: block; font-size: 15px; font-weight: 500; }
+.navlist__desc { display: block; font-size: 13px; color: var(--fg-muted); margin-top: 1px; }
 .navlist__chev { color: var(--fg-muted); flex: none; }
 
 /* Sidebar nav */
@@ -153,13 +150,32 @@
 .acct-menu__item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border-radius: 8px; background: none; border: none; font-family: inherit; font-size: 14px; color: var(--fg); cursor: pointer; text-align: left; }
 .acct-menu__item:hover { background: var(--brand-soft); }
 
-/* Responsive stacking */
-@media (max-width: 560px) {
-  .acct-card { padding: 20px 16px; }
+/* sm/xs (≤768): hide the sidebar, single column, nav becomes a body card.
+ * Placed AFTER all base component rules so these overrides win the cascade. */
+@media (max-width: 768px) {
+  .acct-body { grid-template-columns: 1fr; gap: 8px; padding: 16px 14px 56px; }
+  .acct-nav { display: none; }
+  .acct-back { display: inline-flex; }
+  .only-mobile { display: block; }
+  .only-desktop { display: none; }
+  .acct-topbar { height: 60px; padding: 0 16px; }
+  .acct-card { padding: 22px 18px; border-radius: 14px; margin-bottom: 14px; }
+  .acct-card__head h2 { font-size: 19px; }
+  .acct-hero { padding: 8px 0 20px; }
+  .acct-hero__avatar { width: 76px; height: 76px; font-size: 30px; margin-bottom: 14px; }
+  .acct-hero h1 { font-size: 24px; }
+}
+
+/* Phones (xs): stack row internals, shrink media, tighten cards */
+@media (max-width: 480px) {
+  .acct-card { padding: 18px 14px; }
   .info-row, .app-item, .signin-row { flex-wrap: wrap; }
   .info-row__label { width: 100%; }
   .info-row__value { flex-basis: 100%; }
-  .app-item .btn, .signin-row .btn { margin-left: 56px; }
-  .acct-hero__avatar { width: 72px; height: 72px; font-size: 30px; }
-  .acct-hero h1 { font-size: 24px; }
+  .app-item .btn, .signin-row .btn { margin-left: 52px; }
+  .signin-row .badge { margin-left: 52px; }
+  .navlist__ico, .signin-row__ico { width: 38px; height: 38px; }
+  .app-item__logo { width: 40px; height: 40px; }
+  .acct-hero__avatar { width: 72px; height: 72px; font-size: 28px; }
+  .acct-hero h1 { font-size: 22px; }
 }

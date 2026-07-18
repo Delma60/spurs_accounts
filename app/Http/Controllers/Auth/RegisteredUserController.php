@@ -38,6 +38,7 @@ class RegisteredUserController extends Controller
 
         Auth::login($user, true);
         $request->session()->regenerate();
+        \App\Models\SecurityEvent::record($user, 'registered', $request);
 
         // Continue the OAuth authorize flow if we interrupted one, else home.
         return redirect()->intended('/');
