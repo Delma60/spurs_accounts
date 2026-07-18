@@ -41,6 +41,7 @@ class AppServiceProvider extends ServiceProvider
                 'authToken' => $parameters['authToken'],
                 'state' => $parameters['request']->state,
                 'clientId' => $parameters['client']->getKey(),
+                'csrf' => csrf_token(),
             ]);
         });
     }
