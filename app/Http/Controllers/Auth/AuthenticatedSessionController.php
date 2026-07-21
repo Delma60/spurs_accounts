@@ -46,8 +46,43 @@ class AuthenticatedSessionController extends Controller
         // Issue the shared SSO cookie so every first-party Spurs app is signed in.
         $cookie = SpursSession::cookie(SpursSession::issue($request->user()));
 
-        // Back to the app/authorize flow that sent us here, else home.
-        return redirect()->intended('/')->withCookie($cookie);
+        // Back to the app that sent us here, else home.
+        $target = $request->session()->pull('url.intended', '/');
+
+        // This POST comes from Inertia (XHR). Inertia can't follow a plain 302 to
+        // another origin — it needs a hard visit (409 + X-Inertia-Location), or
+        // the browser silently ends up back on this app.
+        if (self::isExternal($request, $target)) {
+            // Inertia::location() returns a bare 409 Symfony response (no
+            // ->withCookie()), so attach the SSO cookie to its headers directly.
+            $response = Inertia::location($target);
+            $response->headers->setCookie($cookie);
+
+            return $response;
+        }
+
+        return redirect($target)->withCookie($cookie);
+    }
+
+    /**
+     * True when the target is a different *origin* — scheme, host AND port.
+     *
+     * Port matters: in development every Spurs app shares the 127.0.0.1 host and
+     * differs only by port, so comparing hosts alone would treat wallet:3200 as
+     * same-origin, emit a plain 302, and Inertia's XHR would follow it
+     * cross-origin and die with a CORS error.
+     */
+    private static function isExternal(Request $request, string $target): bool
+    {
+        $parts = parse_url($target);
+        if (empty($parts['host'])) {
+            return false; // relative path — same app
+        }
+
+        $scheme = $parts['scheme'] ?? $request->getScheme();
+        $port = isset($parts['port']) ? ':'.$parts['port'] : '';
+
+        return $scheme.'://'.$parts['host'].$port !== $request->getSchemeAndHttpHost();
     }
 
     /** End the SSO session everywhere. */
