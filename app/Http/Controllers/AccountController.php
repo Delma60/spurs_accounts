@@ -65,14 +65,19 @@ class AccountController extends Controller
         return back();
     }
 
-    /** Apps the user has authorized (grouped from their live access tokens). */
+    /** Third-party apps the user has authorized (grouped from live access tokens).
+     * First-party Spurs apps use the shared SSO cookie, not tokens, so they're
+     * intentionally excluded here. */
     private function connectedApps(Request $request): array
     {
+        $firstParty = config('spurs.first_party_client_ids', []);
+
         return $request->user()->tokens()
             ->where('revoked', false)
             ->with('client')
             ->get()
             ->filter(fn ($token) => $token->client !== null)
+            ->reject(fn ($token) => in_array((string) $token->client_id, $firstParty, true))
             ->groupBy('client_id')
             ->map(fn ($tokens) => [
                 'client_id' => (string) $tokens->first()->client_id,

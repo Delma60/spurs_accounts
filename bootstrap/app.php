@@ -19,6 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
         ]);
 
+        // The shared SSO cookie is a signed JWT read by other Spurs apps, so it
+        // must NOT be Laravel-encrypted (each app has a different APP_KEY).
+        $middleware->encryptCookies(except: [
+            'spurs_session',
+        ]);
+
         // OIDC UserInfo is a Bearer-token API call, not a form — no CSRF.
         $middleware->validateCsrfTokens(except: [
             'oauth/userinfo',

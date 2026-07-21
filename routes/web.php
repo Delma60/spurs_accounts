@@ -37,6 +37,9 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:6,1')->name('verification.send');
 });
 
+// ---- Spurs SSO (first-party shared-cookie entry point) ----
+Route::get('/sso/continue', [\App\Http\Controllers\SsoController::class, 'continue'])->name('sso.continue');
+
 // ---- OpenID Connect provider endpoints ----
 Route::get('/.well-known/openid-configuration', [OidcController::class, 'configuration']);
 Route::get('/oauth/jwks', [OidcController::class, 'jwks']);
