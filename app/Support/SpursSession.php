@@ -30,13 +30,21 @@ class SpursSession
     public static function issue(User $user): string
     {
         $now = time();
+        $days = max(1, (int) Settings::get('security.session_days'));
         $header = self::b64(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
         $payload = self::b64(json_encode([
             'sub' => (string) $user->getKey(),
             'name' => $user->name,
             'email' => $user->email,
+            // RBAC travels with the identity so every first-party app and the
+            // admin control plane can authorize without a round-trip to accounts.
+            'roles' => $user->roleNames(),
+            'perms' => $user->permissionKeys(),
+            // Verified KYC tier travels with the identity so Wallet/Pay can gate
+            // limits and payouts without calling back to accounts.
+            'kyc' => $user->kycLevel(),
             'iat' => $now,
-            'exp' => $now + 60 * 60 * 24 * 7, // 7 days
+            'exp' => $now + 60 * 60 * 24 * $days,
         ]));
         $sig = self::b64(hash_hmac('sha256', "$header.$payload", (string) config('spurs.secret'), true));
 
@@ -49,7 +57,7 @@ class SpursSession
         return cookie(
             name: self::cookieName(),
             value: $token,
-            minutes: 60 * 24 * 7,
+            minutes: 60 * 24 * max(1, (int) Settings::get('security.session_days')),
             path: '/',
             domain: config('spurs.cookie_domain'),  // null in dev (host-only), .spurs.com.ng in prod
             secure: config('spurs.cookie_secure', false),

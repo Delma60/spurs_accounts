@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\SecurityEvent;
+use App\Models\User;
+use App\Support\GeoIp;
+use App\Support\RiskEngine;
 use App\Support\SpursSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -35,16 +39,47 @@ class AuthenticatedSessionController extends Controller
         ]);
 
         if (! Auth::attempt($credentials, true)) {
+            // Record the failed attempt against a known account so the risk
+            // engine can spot brute-force bursts (unknown emails are ignored).
+            if ($known = User::where('email', $credentials['email'])->first()) {
+                SecurityEvent::record($known, 'login_failed', $request);
+            }
+
             throw ValidationException::withMessages([
                 'email' => 'These credentials do not match our records.',
             ]);
         }
 
         $request->session()->regenerate();
-        \App\Models\SecurityEvent::record($request->user(), 'login', $request);
+
+        // Score this sign-in against the account's own history (new IP/device/
+        // country, impossible travel, brute-force bursts) and store the verdict.
+        $user = $request->user();
+        $ip = $request->ip();
+        $geo = GeoIp::lookup($ip);
+        $risk = RiskEngine::assess($user, (string) $ip, $geo['country'], SecurityEvent::deviceLabel($request->userAgent()));
+        SecurityEvent::record($user, 'login', $request, [
+            'risk' => $risk['score'],
+            'flagged' => $risk['flagged'],
+            'signals' => $risk['signals'],
+        ]);
+
+        // Extreme risk + admin opted into blocking: stop the session here.
+        if ($risk['blocked']) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            throw ValidationException::withMessages([
+                'email' => 'This sign-in was blocked for security reasons. Please contact support.',
+            ]);
+        }
+
+        // Refresh the account's slow-moving trust score off the updated history.
+        \App\Support\TrustScore::refresh($user);
 
         // Issue the shared SSO cookie so every first-party Spurs app is signed in.
-        $cookie = SpursSession::cookie(SpursSession::issue($request->user()));
+        $cookie = SpursSession::cookie(SpursSession::issue($user));
 
         // Back to the app that sent us here, else home.
         $target = $request->session()->pull('url.intended', '/');

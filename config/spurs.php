@@ -18,4 +18,13 @@ return [
     // they are hidden from the user's "Connected apps" list (third-party only).
     'first_party_client_ids' => array_filter(explode(',', (string) env('SPURS_FIRST_PARTY_CLIENTS', ''))),
 
+    // Shared secret for internal service-to-service calls (e.g. the admin
+    // control plane reading/writing identity data). Never exposed to browsers.
+    'internal_secret' => env('INTERNAL_API_SECRET'),
+
+    // Optional IP → geolocation endpoint for the anti-fraud engine. "{ip}" is
+    // substituted with the address, e.g. "http://ip-api.com/json/{ip}". Unset in
+    // dev — lookups then resolve to "Local network" / "Unknown" (no external calls).
+    'geoip_url' => env('SPURS_GEOIP_URL'),
+
 ];

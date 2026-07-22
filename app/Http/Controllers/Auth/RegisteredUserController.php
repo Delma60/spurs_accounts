@@ -22,10 +22,15 @@ class RegisteredUserController extends Controller
     /** Register a new Spurs account and sign in. */
     public function store(Request $request)
     {
+        // Respect the platform setting that can close public registration.
+        abort_unless(\App\Support\Settings::get('registration.allow_signups'), 403, 'Registration is currently closed.');
+
+        $minLength = (int) \App\Support\Settings::get('registration.min_password_length');
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'confirmed', Password::defaults()],
+            'password' => ['required', 'confirmed', Password::min($minLength)->letters()->numbers()],
         ]);
 
         $user = User::create([
@@ -33,6 +38,10 @@ class RegisteredUserController extends Controller
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
         ]);
+
+        // Grant the platform's default role(s) so every new account has a
+        // baseline identity that travels across all of Spurs Cloud.
+        $user->syncRoles(\App\Models\Role::defaultRoleNames());
 
         event(new Registered($user));
 

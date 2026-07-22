@@ -25,6 +25,8 @@ Route::get('/', function () {
 // The signed-in "My Account" area.
 Route::middleware('auth')->group(function () {
     Route::get('/me', [AccountController::class, 'index'])->name('me');
+    Route::get('/me/kyc', [\App\Http\Controllers\KycController::class, 'show'])->name('me.kyc');
+    Route::post('/me/kyc', [\App\Http\Controllers\KycController::class, 'store'])->name('me.kyc.store');
     Route::put('/me/profile', [AccountController::class, 'updateProfile'])->name('me.profile');
     Route::put('/me/password', [AccountController::class, 'updatePassword'])->name('me.password');
     Route::delete('/me/apps/{clientId}', [AccountController::class, 'revokeApp'])->name('me.apps.revoke');

@@ -10,7 +10,15 @@
         "inertiajs/inertia-laravel": "^3.1",
         "laravel/framework": "^12.0",
         "laravel/passport": "^13.0",
-        "laravel/tinker": "^2.10.1"
+        "laravel/tinker": "^2.10.1",
+        "spurs-cloud/admin-sdk": "^1.0"
+    },
+    "repositories": {
+        "spurs-admin": {
+            "type": "vcs",
+            "url": "https://github.com/Delma60/spurs-admin-laravel-sdk.git",
+            "no-api": true
+        }
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

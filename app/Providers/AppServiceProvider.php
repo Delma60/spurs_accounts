@@ -26,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
             'openid' => 'Verify your identity',
             'profile' => 'See your name and profile info',
             'email' => 'See your email address',
+            'roles' => 'See your roles and permissions across Spurs Cloud',
         ]);
 
         // Render Passport's OAuth consent screen as a branded Inertia page

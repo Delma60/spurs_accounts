@@ -30,6 +30,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'oauth/userinfo',
         ]);
 
+        // Guards the internal service-to-service admin API.
+        $middleware->alias([
+            'internal' => \App\Http\Middleware\EnsureInternalSecret::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // The UserInfo API must answer 401 (not redirect to login) when called

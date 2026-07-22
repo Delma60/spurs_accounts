@@ -27,8 +27,8 @@ class OidcController extends Controller
             'grant_types_supported' => ['authorization_code', 'refresh_token', 'client_credentials'],
             'subject_types_supported' => ['public'],
             'id_token_signing_alg_values_supported' => ['RS256'],
-            'scopes_supported' => ['openid', 'profile', 'email'],
-            'claims_supported' => ['sub', 'name', 'email', 'email_verified'],
+            'scopes_supported' => ['openid', 'profile', 'email', 'roles'],
+            'claims_supported' => ['sub', 'name', 'email', 'email_verified', 'roles', 'permissions'],
             'token_endpoint_auth_methods_supported' => ['client_secret_basic', 'client_secret_post'],
             'code_challenge_methods_supported' => ['S256', 'plain'],
         ]);
@@ -76,6 +76,13 @@ class OidcController extends Controller
         if ($user->tokenCan('email')) {
             $claims['email'] = $user->email;
             $claims['email_verified'] = $user->hasVerifiedEmail();
+        }
+
+        if ($user->tokenCan('roles')) {
+            $claims['roles'] = $user->roleNames();
+            $claims['permissions'] = $user->permissionKeys();
+            $claims['kyc_level'] = $user->kycLevel();
+            $claims['kyc_status'] = $user->kycStatus();
         }
 
         return response()->json($claims);
