@@ -31,7 +31,7 @@ jobs:
 
       - name: Install PHP dependencies (with Private Repo Auth)
         env:
-          COMPOSER_AUTH: '{"http-basic": {"github.com": {"username": "x-access-token", "password": "${{ secrets.COMPOSER_AUTH_TOKEN }}"}}}'
+          COMPOSER_AUTH: '{"http-basic": {"github.com": {"username": "x-access-token", "password": "${{ secrets.COMPOSER_AUTH }}"}}}'
         run: |
           php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
           php composer-setup.php --install-dir=/usr/local/bin --filename=composer
