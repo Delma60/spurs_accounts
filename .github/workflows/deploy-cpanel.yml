@@ -23,17 +23,19 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Or your preferred Node version
-          cache: 'npm' # Automatically caches npm dependencies for faster builds
+          node-version: '20'
+          cache: 'npm'
 
       - name: Copy .env
         run: cp .env.production .env
 
-      - name: Install PHP dependencies
+      - name: Install PHP dependencies (with Private Repo Auth)
+        env:
+          COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.COMPOSER_AUTH_TOKEN }}"}}'
         run: |
           php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
           php composer-setup.php --install-dir=/usr/local/bin --filename=composer
-          composer install --optimize-autoloader
+          composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Install Frontend dependencies and Build Assets
         run: |
@@ -59,4 +61,4 @@ jobs:
           exclude: |
             **/node_modules/**
             **/.git*
-            .env # the server keeps its own .env — never overwrite it with the CI copy built from .env.example
+            .env
