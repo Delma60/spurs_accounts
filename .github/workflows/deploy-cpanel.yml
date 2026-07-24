@@ -3,7 +3,7 @@ name: Deploy Site to live
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   deploy:
