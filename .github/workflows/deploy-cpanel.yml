@@ -20,6 +20,12 @@ jobs:
           extensions: mbstring, bcmath, curl, pdo, mysql
           coverage: none
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Or your preferred Node version
+          cache: 'npm' # Automatically caches npm dependencies for faster builds
+
       - name: Copy .env
         run: cp .env.production .env
 
@@ -29,7 +35,12 @@ jobs:
           php composer-setup.php --install-dir=/usr/local/bin --filename=composer
           composer install --optimize-autoloader
 
-      - name: Prepare Laravel storage and cach
+      - name: Install Frontend dependencies and Build Assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Prepare Laravel storage and cache
         run: |
           mkdir -p storage/framework/views
           mkdir -p storage/framework/cache
@@ -37,14 +48,14 @@ jobs:
           mkdir -p bootstrap/cache
           chmod -R 775 storage bootstrap/cache
 
-      - name: Deploy Backend
+      - name: Deploy Backend & Compiled Assets
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.CPANEL_HOST }}
           username: ${{ secrets.CPANEL_USERNAME }}
           password: ${{ secrets.CPANEL_PASSWORD }}
           server-dir: /accounts.spurs.com.ng
-          local-dir: ./ # deploy everything
+          local-dir: ./ # deploy everything including public/build
           exclude: |
             **/node_modules/**
             **/.git*
