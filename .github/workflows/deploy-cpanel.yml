@@ -35,7 +35,7 @@ jobs:
         run: |
           php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
           php composer-setup.php --install-dir=/usr/local/bin --filename=composer
-          composer install --no-interaction --prefer-dist --optimize-autoloader
+          composer install --no-interaction --prefer-source --optimize-autoloader
 
       - name: Install Frontend dependencies and Build Assets
         run: |
