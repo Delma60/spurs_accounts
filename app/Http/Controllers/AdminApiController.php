@@ -340,6 +340,58 @@ class AdminApiController extends Controller
         ];
     }
 
+    /**
+     * "Did this user do X on their Spurs Account, and did they do it after
+     * time T?" Spurs Earn asks this to verify an earn-by-doing task. The
+     * timestamp is the point: identity verified last year must not pay out on
+     * a task created today.
+     */
+    public function activity(Request $request)
+    {
+        $data = $request->validate([
+            'user' => ['required', 'string'],
+            'kind' => ['required', 'string'],
+            'since' => ['nullable', 'date'],
+        ]);
+
+        // The SSO subject is the account id; fall back to email for callers
+        // that only hold the address.
+        $user = User::where('id', $data['user'])->orWhere('email', $data['user'])->first();
+        if (! $user) {
+            return response()->json(['ok' => true, 'count' => 0, 'latestAt' => null, 'reason' => 'unknown user']);
+        }
+
+        $since = isset($data['since']) ? \Carbon\Carbon::parse($data['since']) : null;
+
+        return match ($data['kind']) {
+            'kyc' => $this->kycActivity($user, $since, (int) $request->input('level', 2)),
+            default => response()->json(['ok' => false, 'count' => 0, 'error' => 'Unsupported activity kind'], 400),
+        };
+    }
+
+    private function kycActivity(User $user, ?\Carbon\Carbon $since, int $level)
+    {
+        $kyc = $user->kyc;
+
+        // Must be verified, at or above the required tier, and reviewed after
+        // the moment the user started the task.
+        $qualifies = $kyc
+            && $kyc->status === 'verified'
+            && (int) $kyc->level >= $level
+            && (! $since || ($kyc->reviewed_at && $kyc->reviewed_at->gt($since)));
+
+        return response()->json([
+            'ok' => true,
+            'count' => $qualifies ? 1 : 0,
+            'latestAt' => $kyc?->reviewed_at?->toIso8601String(),
+            'detail' => [
+                'status' => $kyc?->status,
+                'level' => $kyc ? (int) $kyc->level : 0,
+                'requiredLevel' => $level,
+            ],
+        ]);
+    }
+
     private function userSummary(User $u): array
     {
         return [

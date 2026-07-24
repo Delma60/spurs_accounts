@@ -10,7 +10,7 @@ class KycProfile extends Model
     protected $fillable = [
         'user_id', 'level', 'status', 'id_type', 'id_masked', 'id_hash',
         'full_name', 'date_of_birth', 'phone', 'address', 'state', 'country',
-        'document_ref', 'selfie_ref', 'provider', 'provider_ref',
+        'document_ref', 'selfie_ref', 'address_proof_ref', 'address_proof_type', 'provider', 'provider_ref',
         'rejection_reason', 'reviewed_by', 'submitted_at', 'reviewed_at',
     ];
 

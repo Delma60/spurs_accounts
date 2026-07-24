@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Notifications\SpursChannel;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
 use Laravel\Passport\Passport;
@@ -21,6 +23,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Route notifications tagged `spurs` through the platform mailer, so
+        // auth emails match every other Spurs email and no SMTP credentials
+        // live in this app.
+        Notification::extend('spurs', fn () => new SpursChannel);
+
         // OpenID Connect scopes advertised by the /userinfo + discovery layer.
         Passport::tokensCan([
             'openid' => 'Verify your identity',

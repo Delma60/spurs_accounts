@@ -25,6 +25,10 @@ Route::get('/', function () {
 // The signed-in "My Account" area.
 Route::middleware('auth')->group(function () {
     Route::get('/me', [AccountController::class, 'index'])->name('me');
+    Route::get('/me/personal', [AccountController::class, 'personal'])->name('me.personal');
+    Route::get('/me/security', [AccountController::class, 'security'])->name('me.security');
+    Route::get('/me/apps', [AccountController::class, 'apps'])->name('me.apps');
+    Route::get('/me/payments', [AccountController::class, 'payments'])->name('me.payments');
     Route::get('/me/kyc', [\App\Http\Controllers\KycController::class, 'show'])->name('me.kyc');
     Route::post('/me/kyc', [\App\Http\Controllers\KycController::class, 'store'])->name('me.kyc.store');
     Route::put('/me/profile', [AccountController::class, 'updateProfile'])->name('me.profile');

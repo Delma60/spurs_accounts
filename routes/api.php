@@ -33,6 +33,10 @@ Route::middleware('internal')->prefix('admin')->group(function () {
     Route::get('/fraud/overview', [AdminApiController::class, 'fraudOverview']);
     Route::get('/fraud/alerts', [AdminApiController::class, 'fraudAlerts']);
 
+    // "Did this user do X, and after when?" — used by Spurs Earn to verify
+    // that an earn-by-doing task was genuinely completed.
+    Route::post('/activity', [AdminApiController::class, 'activity']);
+
     // KYC review.
     Route::get('/kyc', [AdminApiController::class, 'kycQueue']);
     Route::post('/kyc/{id}/review', [AdminApiController::class, 'reviewKyc']);

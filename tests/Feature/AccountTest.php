@@ -26,11 +26,23 @@ class AccountTest extends TestCase
     {
         $user = User::factory()->create(['name' => 'Azuka Genius']);
 
+        // /me is the overview now; connected apps live on their own page.
         $this->actingAs($user)->get('/me')
             ->assertStatus(200)
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Account/Home')
                 ->where('user.name', 'Azuka Genius')
+                ->has('appCount'));
+    }
+
+    public function test_connected_apps_has_its_own_page(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get('/me/apps')
+            ->assertStatus(200)
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Account/Apps')
                 ->has('connectedApps'));
     }
 

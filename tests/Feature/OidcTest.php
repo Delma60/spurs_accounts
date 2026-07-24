@@ -23,7 +23,8 @@ class OidcTest extends TestCase
                 'jwks_uri',
                 'scopes_supported',
             ])
-            ->assertJsonPath('scopes_supported', ['openid', 'profile', 'email']);
+            // `roles` carries platform roles/permissions + KYC tier to relying parties.
+            ->assertJsonPath('scopes_supported', ['openid', 'profile', 'email', 'roles']);
     }
 
     public function test_jwks_publishes_an_rsa_key(): void

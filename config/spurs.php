@@ -22,6 +22,10 @@ return [
     // control plane reading/writing identity data). Never exposed to browsers.
     'internal_secret' => env('INTERNAL_API_SECRET'),
 
+    // Sibling services the account dashboard reads from (balances, payments).
+    'wallet_url' => env('SPURS_WALLET_URL', 'http://127.0.0.1:3200'),
+    'pay_url' => env('SPURS_PAY_URL', 'http://127.0.0.1:3100'),
+
     // Optional IP → geolocation endpoint for the anti-fraud engine. "{ip}" is
     // substituted with the address, e.g. "http://ip-api.com/json/{ip}". Unset in
     // dev — lookups then resolve to "Local network" / "Unknown" (no external calls).

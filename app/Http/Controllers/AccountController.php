@@ -10,20 +10,72 @@ use Inertia\Inertia;
 
 class AccountController extends Controller
 {
-    /** The "My Account" dashboard (/me). */
-    public function index(Request $request)
+    /** Shared props every /me page needs (identity + KYC state for the nav). */
+    private function shell(Request $request): array
     {
         $user = $request->user();
+        $kyc = $user->kyc()->first();
 
-        return Inertia::render('Account/Home', [
+        return [
             'user' => [
                 'name' => $user->name,
                 'email' => $user->email,
                 'email_verified' => $user->hasVerifiedEmail(),
                 'created_at' => $user->created_at?->format('M j, Y'),
             ],
+            'kyc' => $kyc ? ['status' => $kyc->status, 'level' => $kyc->level] : null,
+        ];
+    }
+
+    /** Overview (/me). */
+    public function index(Request $request)
+    {
+        return Inertia::render('Account/Home', [
+            ...$this->shell($request),
+            'appCount' => count($this->connectedApps($request)),
+        ]);
+    }
+
+    /** Personal info (/me/personal). */
+    public function personal(Request $request)
+    {
+        return Inertia::render('Account/Personal', $this->shell($request));
+    }
+
+    /** Security & sign-in (/me/security). */
+    public function security(Request $request)
+    {
+        return Inertia::render('Account/Security', [
+            ...$this->shell($request),
             'connectedApps' => $this->connectedApps($request),
             'securityEvents' => $this->securityEvents($request),
+        ]);
+    }
+
+    /** Connected apps (/me/apps). */
+    public function apps(Request $request)
+    {
+        return Inertia::render('Account/Apps', [
+            ...$this->shell($request),
+            'connectedApps' => $this->connectedApps($request),
+        ]);
+    }
+
+    /**
+     * Payments & subscriptions (/me/payments) — one place for wallet balances,
+     * transactions and recurring payments, the way Google groups them.
+     */
+    public function payments(Request $request)
+    {
+        $userId = (string) $request->user()->getKey();
+
+        return Inertia::render('Account/Payments', [
+            ...$this->shell($request),
+            'balances' => \App\Support\WalletClient::balances($userId),
+            'transactions' => \App\Support\WalletClient::transactions($userId, 40),
+            // Recurring billing appears here once the billing service exposes it.
+            'subscriptions' => [],
+            'connectedApps' => $this->connectedApps($request),
         ]);
     }
 

@@ -50,8 +50,10 @@ class SecurityEventTest extends TestCase
         $user = User::factory()->create();
         $user->securityEvents()->create(['type' => 'login', 'ip' => '127.0.0.1', 'device' => 'Chrome on Windows']);
 
-        $this->actingAs($user)->get('/me')
-            ->assertInertia(fn ($page) => $page->has('securityEvents', 1)
+        // Activity moved to the dedicated security page.
+        $this->actingAs($user)->get('/me/security')
+            ->assertInertia(fn ($page) => $page->component('Account/Security')
+                ->has('securityEvents', 1)
                 ->where('securityEvents.0.type', 'login')
                 ->where('securityEvents.0.label', 'Signed in'));
     }

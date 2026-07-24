@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Illuminate\Auth\Notifications\VerifyEmail;
+use App\Notifications\VerifyEmailNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
@@ -41,7 +41,7 @@ class EmailVerificationTest extends TestCase
             'password_confirmation' => 'Password123!',
         ]);
 
-        Notification::assertSentTo(User::whereEmail('ada@spurs.com.ng')->first(), VerifyEmail::class);
+        Notification::assertSentTo(User::whereEmail('ada@spurs.com.ng')->first(), VerifyEmailNotification::class);
     }
 
     public function test_email_can_be_verified_via_signed_link(): void
@@ -65,6 +65,6 @@ class EmailVerificationTest extends TestCase
 
         $this->actingAs($user)->post('/email/verification-notification');
 
-        Notification::assertSentTo($user, VerifyEmail::class);
+        Notification::assertSentTo($user, VerifyEmailNotification::class);
     }
 }

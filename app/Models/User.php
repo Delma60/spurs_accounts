@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Models\KycProfile;
 use App\Models\Role;
 use App\Models\SecurityEvent;
+use App\Notifications\ResetPasswordNotification;
+use App\Notifications\VerifyEmailNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -23,6 +25,25 @@ class User extends Authenticatable implements MustVerifyEmail
     public function securityEvents(): HasMany
     {
         return $this->hasMany(SecurityEvent::class)->latest();
+    }
+
+    /**
+     * Auth emails go through the platform mailer rather than Laravel's own mail
+     * transport — no Spurs app holds SMTP credentials, and every Spurs email is
+     * rendered from the same shared templates.
+     *
+     * These still run through Laravel's notification pipeline, so the password
+     * broker keeps minting and carrying its token and `Notification::fake()`
+     * keeps working; only the delivery channel changes.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new VerifyEmailNotification);
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 
     /** The user's KYC record (one per account). */
