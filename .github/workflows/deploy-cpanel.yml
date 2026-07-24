@@ -13,8 +13,8 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_DATABASE: spurs_accounts
-          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: accounts
+          MYSQL_ROOT_PASSWORD: mywitjjl_accounts.spurs
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping -h localhost" --health-interval=10s --health-timeout=5s --health-retries=3
