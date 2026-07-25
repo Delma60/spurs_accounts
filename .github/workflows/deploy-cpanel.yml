@@ -65,7 +65,7 @@ jobs:
           server: ${{ secrets.CPANEL_HOST }}
           username: ${{ secrets.CPANEL_USERNAME }}
           password: ${{ secrets.CPANEL_PASSWORD }}
-          server-dir: /accounts.spurs.com.ng/
+          server-dir: /
           local-dir: ./ # deploy everything including public/build
           exclude: |
             **/node_modules/**
