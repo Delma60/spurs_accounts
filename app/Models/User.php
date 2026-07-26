@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\SecurityEvent;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\VerifyEmailNotification;
+use App\Support\SpursMailer;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -38,9 +39,20 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function sendEmailVerificationNotification(): bool
     {
-        $this->notify(new VerifyEmailNotification);
+        $notification = new VerifyEmailNotification();
+        $message = $notification->toSpurs($this);
+        $to = $message['to'] ?? $this->routeNotificationFor('mail', $notification);
 
-        return true;
+        if (! $to) {
+            return false;
+        }
+
+        return SpursMailer::send(
+            $message['template'],
+            is_array($to) ? array_key_first($to) : $to,
+            $message['context'] ?? [],
+            $message['idempotencyKey'] ?? null,
+        );
     }
 
     public function sendPasswordResetNotification($token): void
