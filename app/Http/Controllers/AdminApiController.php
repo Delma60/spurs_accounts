@@ -47,6 +47,22 @@ class AdminApiController extends Controller
         return response()->json(['users' => $users]);
     }
 
+    public function bvn(int $id)
+    {
+        $user = User::find($id);
+        $kyc = $user?->kyc()->first();
+
+        if (! $kyc || $kyc->status !== 'verified' || $kyc->id_type !== 'bvn' || empty($kyc->id_encrypted)) {
+            return response()->json(['bvn' => null]);
+        }
+
+        try {
+            return response()->json(['bvn' => decrypt($kyc->id_encrypted)]);
+        } catch (\Throwable $e) {
+            return response()->json(['bvn' => null]);
+        }
+    }
+
     /** One account with roles, effective permissions and recent security events. */
     public function user(int $id)
     {

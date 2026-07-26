@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class KycProfile extends Model
 {
 protected $fillable = [
-    'user_id', 'level', 'status', 'id_type', 'id_masked', 'id_hash',
+    'user_id', 'level', 'status', 'id_type', 'id_masked', 'id_hash', 'id_encrypted',
     'tier2_id_type', 'tier2_id_masked', 'tier2_id_hash',
     'full_name', 'date_of_birth', 'phone', 'address', 'state', 'country',
     'document_ref', 'selfie_ref', 'address_proof_ref', 'address_proof_type', 'provider', 'provider_ref',

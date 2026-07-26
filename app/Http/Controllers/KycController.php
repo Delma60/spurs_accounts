@@ -169,6 +169,8 @@ private function tier1(Request $request): array|\Illuminate\Http\RedirectRespons
         'id_type' => 'bvn',
         'id_masked' => KycProfile::mask($data['id_number']),
         'id_hash' => KycProfile::hashId('bvn', $data['id_number']),
+        'id_encrypted' => 
+            $digits !== '' ? encrypt($digits) : null,
         'full_name' => $data['full_name'],
         'date_of_birth' => $data['date_of_birth'],
         'phone' => $data['phone'],

@@ -13,6 +13,8 @@ Route::get('/user', function (Request $request) {
  * Spurs admin control plane over the shared internal secret. Roles and
  * permissions created here are authoritative for the whole platform.
  */
+Route::middleware('internal')->get('/internal/users/{id}/bvn', [AdminApiController::class, 'bvn']);
+
 Route::middleware('internal')->prefix('admin')->group(function () {
     Route::get('/overview', [AdminApiController::class, 'overview']);
 
