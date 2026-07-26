@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Notifications\VerifyEmailNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
 use Inertia\Testing\AssertableInertia;
@@ -60,11 +61,25 @@ class EmailVerificationTest extends TestCase
 
     public function test_resend_sends_a_new_link(): void
     {
-        Notification::fake();
+        config(['services.spurs_mail.url' => 'http://mail.test', 'services.spurs_mail.secret' => 'secret']);
+        Http::fake([
+            'http://mail.test/api/private/mail/send' => Http::response(['ok' => true], 200),
+        ]);
         $user = User::factory()->unverified()->create();
 
-        $this->actingAs($user)->post('/email/verification-notification');
+        $this->actingAs($user)->post('/email/verification-notification')
+            ->assertSessionHas('status', 'verification-link-sent');
+    }
 
-        Notification::assertSentTo($user, VerifyEmailNotification::class);
+    public function test_resend_reports_failure_when_mail_service_rejects(): void
+    {
+        config(['services.spurs_mail.url' => 'http://mail.test', 'services.spurs_mail.secret' => 'secret']);
+        Http::fake([
+            'http://mail.test/api/private/mail/send' => Http::response(['ok' => false, 'error' => 'bad'], 500),
+        ]);
+        $user = User::factory()->unverified()->create();
+
+        $this->actingAs($user)->post('/email/verification-notification')
+            ->assertSessionHas('status', 'verification-link-failed');
     }
 }

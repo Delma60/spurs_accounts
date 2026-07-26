@@ -14,8 +14,8 @@ class EmailVerificationNotificationController extends Controller
             return redirect()->intended('/me');
         }
 
-        $request->user()->sendEmailVerificationNotification();
+        $sent = $request->user()->sendEmailVerificationNotification();
 
-        return back()->with('status', 'verification-link-sent');
+        return back()->with('status', $sent ? 'verification-link-sent' : 'verification-link-failed');
     }
 }

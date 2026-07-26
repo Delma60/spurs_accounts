@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     House, User, ShieldCheck, Blocks, LogOut, Mail, Check,
     ChevronRight, ChevronLeft, BadgeCheck, Wallet, ArrowLeftRight, RefreshCw,
@@ -135,11 +135,15 @@ function AvatarMenu({ user, initial }) {
 
 function VerifyBanner() {
     const { post, processing } = useForm({});
-    const [sent, setSent] = useState(false);
+    const { flash } = usePage().props;
+    const status = flash?.status;
+
     const resend = () => post('/email/verification-notification', {
         preserveScroll: true,
-        onSuccess: () => setSent(true),
     });
+
+    const sent = status === 'verification-link-sent';
+    const failed = status === 'verification-link-failed';
 
     return (
         <div className="verify-banner">
@@ -147,6 +151,10 @@ function VerifyBanner() {
             <span>Verify your email address to fully secure your account.</span>
             {sent ? (
                 <span className="verify-banner__sent"><Check size={15} /> Link sent — check your inbox</span>
+            ) : failed ? (
+                <span className="verify-banner__sent" style={{ color: '#b45309' }}>
+                    We couldn’t send the verification link right now. Please try again in a moment.
+                </span>
             ) : (
                 <button className="verify-banner__btn" onClick={resend} disabled={processing}>
                     {processing ? 'Sending…' : 'Send verification link'}

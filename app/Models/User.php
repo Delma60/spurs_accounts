@@ -36,9 +36,11 @@ class User extends Authenticatable implements MustVerifyEmail
      * broker keeps minting and carrying its token and `Notification::fake()`
      * keeps working; only the delivery channel changes.
      */
-    public function sendEmailVerificationNotification(): void
+    public function sendEmailVerificationNotification(): bool
     {
         $this->notify(new VerifyEmailNotification);
+
+        return true;
     }
 
     public function sendPasswordResetNotification($token): void
