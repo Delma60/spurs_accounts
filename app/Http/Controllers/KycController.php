@@ -28,9 +28,16 @@ class KycController extends Controller
 
     public function show(Request $request)
     {
-        $kyc = $request->user()->kyc()->first();
+        $user = $request->user();
+    $kyc = $user->kyc()->first();
 
         return Inertia::render('Account/Kyc', [
+            'user' => [
+            'name' => $user->name,
+            'email' => $user->email,
+            'email_verified' => $user->hasVerifiedEmail(),
+            'created_at' => $user->created_at?->format('M j, Y'),
+        ],
             'kyc' => $kyc ? [
                 'level' => $kyc->level,
                 'status' => $kyc->status,
