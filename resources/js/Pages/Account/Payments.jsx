@@ -9,7 +9,7 @@ const TABS = [
     { id: 'subscriptions', label: 'Subscriptions', Icon: RefreshCw },
 ];
 
-const WALLET_URL = 'http://127.0.0.1:3200';
+const WALLET_URL = 'https://wallet.spurs.com.ng';
 
 export default function Payments({ user, kyc, balances = [], transactions = [], subscriptions = [], connectedApps = [] }) {
     const [tab, setTab] = useState('wallet');
