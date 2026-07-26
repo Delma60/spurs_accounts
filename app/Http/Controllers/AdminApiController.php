@@ -182,41 +182,37 @@ class AdminApiController extends Controller
 
     /** KYC review queue. Flags national IDs reused across accounts. */
     public function kycQueue(Request $request)
-    {
-        $status = $request->query('status');
-        $rows = \App\Models\KycProfile::with('user:id,name,email')
-            ->when($status, fn ($q) => $q->where('status', $status))
-            ->orderByRaw("case status when 'pending' then 0 when 'rejected' then 1 else 2 end")
-            ->orderByDesc('submitted_at')
-            ->limit((int) $request->query('limit', 200))
-            ->get();
+{
+    $status = $request->query('status');
+    $rows = \App\Models\KycProfile::with('user:id,name,email')
+        ->when($status, fn ($q) => $q->where('status', $status))
+        ->orderByRaw("case status when 'pending' then 0 when 'rejected' then 1 else 2 end")
+        ->orderByDesc('submitted_at')
+        ->limit((int) $request->query('limit', 200))
+        ->get();
 
-        // Count duplicate national IDs in one pass.
-        $dupCounts = \App\Models\KycProfile::selectRaw('id_hash, count(*) as c')
-            ->whereNotNull('id_hash')->groupBy('id_hash')->havingRaw('count(*) > 1')
-            ->pluck('c', 'id_hash');
-
-        return response()->json([
-            'kyc' => $rows->map(fn ($k) => [
-                'id' => $k->id,
-                'user' => $k->user ? ['id' => $k->user->id, 'name' => $k->user->name, 'email' => $k->user->email] : null,
-                'level' => $k->level, 'status' => $k->status, 'tier' => $k->tierLabel(),
-                'id_type' => $k->id_type, 'id_masked' => $k->id_masked,
-                'full_name' => $k->full_name, 'phone' => $k->phone,
-                'state' => $k->state, 'country' => $k->country,
-                'duplicates' => $k->id_hash ? max(0, (int) ($dupCounts[$k->id_hash] ?? 1) - 1) : 0,
-                'rejection_reason' => $k->rejection_reason,
-                'submitted_at' => $k->submitted_at?->toIso8601String(),
-                'reviewed_at' => $k->reviewed_at?->toIso8601String(),
-                'reviewed_by' => $k->reviewed_by,
-            ]),
-            'counts' => [
-                'pending' => \App\Models\KycProfile::where('status', 'pending')->count(),
-                'verified' => \App\Models\KycProfile::where('status', 'verified')->count(),
-                'rejected' => \App\Models\KycProfile::where('status', 'rejected')->count(),
-            ],
-        ]);
-    }
+    return response()->json([
+        'kyc' => $rows->map(fn ($k) => [
+            'id' => $k->id,
+            'user' => $k->user ? ['id' => $k->user->id, 'name' => $k->user->name, 'email' => $k->user->email] : null,
+            'level' => $k->level, 'status' => $k->status, 'tier' => $k->tierLabel(),
+            'id_type' => $k->id_type, 'id_masked' => $k->id_masked,
+            'tier2_id_type' => $k->tier2_id_type, 'tier2_id_masked' => $k->tier2_id_masked,
+            'full_name' => $k->full_name, 'phone' => $k->phone,
+            'state' => $k->state, 'country' => $k->country,
+            'duplicates' => $k->duplicates()->count(),
+            'rejection_reason' => $k->rejection_reason,
+            'submitted_at' => $k->submitted_at?->toIso8601String(),
+            'reviewed_at' => $k->reviewed_at?->toIso8601String(),
+            'reviewed_by' => $k->reviewed_by,
+        ]),
+        'counts' => [
+            'pending' => \App\Models\KycProfile::where('status', 'pending')->count(),
+            'verified' => \App\Models\KycProfile::where('status', 'verified')->count(),
+            'rejected' => \App\Models\KycProfile::where('status', 'rejected')->count(),
+        ],
+    ]);
+}
 
     /** Approve or reject a KYC submission. */
     public function reviewKyc(Request $request, int $id)

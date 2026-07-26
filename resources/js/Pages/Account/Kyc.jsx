@@ -43,7 +43,12 @@ export default function Kyc({ user, kyc, idTypes, tiers }) {
                     <span className={badge.cls}><badge.Icon size={13} /> {badge.text}</span>
                     {kyc?.id_masked && (
                         <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>
-                            {(idTypes?.[kyc.id_type] ?? kyc.id_type)} · {kyc.id_masked}
+                            BVN · {kyc.id_masked}
+                        </span>
+                    )}
+                    {kyc?.tier2_id_masked && (
+                        <span style={{ fontSize: 13, color: 'var(--fg-muted)' }}>
+                            {(idTypes?.[kyc.tier2_id_type] ?? kyc.tier2_id_type)} · {kyc.tier2_id_masked}
                         </span>
                     )}
                 </div>
@@ -76,7 +81,7 @@ export default function Kyc({ user, kyc, idTypes, tiers }) {
                 </div>
             </div>
 
-            {step === 1 && <Tier1 kyc={kyc} user={user} idTypes={idTypes} onDone={() => setStep(2)} />}
+            {step === 1 && <Tier1 kyc={kyc} user={user} onDone={() => setStep(2)} />}
             {step === 2 && <Tier2 locked={!submitted} onDone={() => setStep(3)} />}
             {step === 3 && <Tier3 kyc={kyc} locked={!submitted} />}
         </AccountLayout>
@@ -85,10 +90,9 @@ export default function Kyc({ user, kyc, idTypes, tiers }) {
 
 /* ------------------------------- tier 1 --------------------------------- */
 
-function Tier1({ kyc, user, idTypes, onDone }) {
+function Tier1({ kyc, user, onDone }) {
     const form = useForm({
         step: 1,
-        id_type: kyc?.id_type ?? 'bvn',
         id_number: '',
         full_name: kyc?.full_name ?? user?.name ?? '',
         date_of_birth: '',
@@ -102,20 +106,15 @@ function Tier1({ kyc, user, idTypes, onDone }) {
     return (
         <form onSubmit={submit} className="acct-card">
             <div className="acct-card__head">
-                <h2>Tier 1 — your identity</h2>
-                <p>We store a one-way hash of your ID, never the full number.</p>
+                <h2>Tier 1 — your BVN</h2>
+                <p>We store a one-way hash of your BVN, never the full number.</p>
             </div>
             <div style={{ marginTop: 14 }}>
-                <F label="ID type" error={form.errors.id_type}>
-                    <select value={form.data.id_type} onChange={(e) => form.setData('id_type', e.target.value)}>
-                        {Object.entries(idTypes ?? {}).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                    </select>
-                </F>
-                <F label="ID number" error={form.errors.id_number} hint="BVN and NIN are 11 digits.">
+                <F label="BVN" error={form.errors.id_number} hint="Your Bank Verification Number is 11 digits.">
                     <input inputMode="numeric" value={form.data.id_number}
                         onChange={(e) => form.setData('id_number', e.target.value)} placeholder="•••••••••••" />
                 </F>
-                <F label="Full name (as on your ID)" error={form.errors.full_name}>
+                <F label="Full name (as on your BVN)" error={form.errors.full_name}>
                     <input value={form.data.full_name} onChange={(e) => form.setData('full_name', e.target.value)} />
                 </F>
                 <div className="fld-row">
@@ -127,15 +126,21 @@ function Tier1({ kyc, user, idTypes, onDone }) {
                     </F>
                 </div>
             </div>
-            <Actions processing={form.processing} label="Submit tier 1" note="You can stop here — tier 1 already unlocks basic limits." />
+            <Actions processing={form.processing} label="Submit tier 1" note="Phone number and BVN are both required to complete tier 1." />
         </form>
     );
 }
 
 /* ------------------------------- tier 2 --------------------------------- */
 
-function Tier2({ locked, onDone }) {
-    const form = useForm({ step: 2, document: null, selfie: null });
+function Tier2({ locked, idTypes, onDone }) {
+    const form = useForm({
+        step: 2,
+        id_type: Object.keys(idTypes ?? {})[0] ?? 'nin',
+        id_number: '',
+        document: null,
+        selfie: null,
+    });
     const submit = (e) => {
         e.preventDefault();
         form.post('/me/kyc', { preserveScroll: true, forceFormData: true, onSuccess: () => onDone?.() });
@@ -146,10 +151,20 @@ function Tier2({ locked, onDone }) {
     return (
         <form onSubmit={submit} className="acct-card">
             <div className="acct-card__head">
-                <h2>Tier 2 — document &amp; selfie</h2>
-                <p>A clear photo of your government ID, plus a selfie to match it.</p>
+                <h2>Tier 2 — national ID, document &amp; selfie</h2>
+                <p>Provide a second national ID (not BVN), a photo of it, and a selfie to match.</p>
             </div>
             <div style={{ marginTop: 14 }}>
+                <div className="fld-row">
+                    <F label="ID type" error={form.errors.id_type}>
+                        <select value={form.data.id_type} onChange={(e) => form.setData('id_type', e.target.value)}>
+                            {Object.entries(idTypes ?? {}).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                        </select>
+                    </F>
+                    <F label="ID number" error={form.errors.id_number}>
+                        <input value={form.data.id_number} onChange={(e) => form.setData('id_number', e.target.value)} placeholder="•••••••••••" />
+                    </F>
+                </div>
                 <div className="fld-row">
                     <F label="ID document" error={form.errors.document} hint="JPG, PNG or PDF · max 5MB">
                         <input type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={(e) => form.setData('document', e.target.files[0])} />
@@ -159,11 +174,10 @@ function Tier2({ locked, onDone }) {
                     </F>
                 </div>
             </div>
-            <Actions processing={form.processing} progress={form.progress} label="Submit tier 2" note="Optional — only needed for higher limits." />
+            <Actions processing={form.processing} progress={form.progress} label="Submit tier 2" note="Required for higher limits." />
         </form>
     );
 }
-
 /* ------------------------------- tier 3 --------------------------------- */
 
 function Tier3({ kyc, locked }) {

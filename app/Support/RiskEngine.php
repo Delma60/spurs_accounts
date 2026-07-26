@@ -122,17 +122,23 @@ class RiskEngine
             $add('unverified_email', 'Email address never verified', 10);
         }
 
-        // The strongest signal we have: the same BVN/NIN on more than one account.
-        $kyc = $user->kyc()->first();
-        if ($kyc && $kyc->id_hash) {
-            $dupes = KycProfile::where('id_hash', $kyc->id_hash)
-                ->where('user_id', '!=', $user->getKey())
-                ->count();
-            if ($dupes > 0) {
-                $add('duplicate_national_id', "National ID reused on {$dupes} other account(s)", 45);
-            }
+        // The strongest signal we have: the same national ID (tier 1 or tier 2) on more than one account.
+$kyc = $user->kyc()->first();
+if ($kyc) {
+    $hashes = array_values(array_filter([$kyc->id_hash, $kyc->tier2_id_hash]));
+    if ($hashes) {
+        $dupes = KycProfile::where('user_id', '!=', $user->getKey())
+            ->where(function ($q) use ($hashes) {
+                foreach ($hashes as $h) {
+                    $q->orWhere('id_hash', $h)->orWhere('tier2_id_hash', $h);
+                }
+            })
+            ->count();
+        if ($dupes > 0) {
+            $add('duplicate_national_id', "National ID reused on {$dupes} other account(s)", 45);
         }
-
+    }
+}
         $score = min(100, array_sum(array_column($signals, 'weight')));
         $threshold = (int) Settings::get('fraud.risk_flag_threshold');
         $blockOn = (bool) Settings::get('fraud.block_high_risk');

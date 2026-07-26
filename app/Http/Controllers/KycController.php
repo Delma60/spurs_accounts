@@ -26,36 +26,49 @@ class KycController extends Controller
         return $types ?: KycProfile::ID_TYPES;
     }
 
-    public function show(Request $request)
-    {
-        $user = $request->user();
-    $kyc = $user->kyc()->first();
+    /** ID types accepted for tier 1 — BVN only (admin can still fully disable it). */
+private function acceptedTier1IdTypes(): array
+{
+    $types = array_intersect_key(KycProfile::ID_TYPES, array_flip(KycProfile::TIER1_ID_TYPES));
+    $allowed = $this->acceptedIdTypes();
 
-        return Inertia::render('Account/Kyc', [
-            'user' => [
-            'name' => $user->name,
-            'email' => $user->email,
-            'email_verified' => $user->hasVerifiedEmail(),
-            'created_at' => $user->created_at?->format('M j, Y'),
-        ],
-            'kyc' => $kyc ? [
-                'level' => $kyc->level,
-                'status' => $kyc->status,
-                'tier' => $kyc->tierLabel(),
-                'id_type' => $kyc->id_type,
-                'id_masked' => $kyc->id_masked,
-                'full_name' => $kyc->full_name,
-                'phone' => $kyc->phone,
-                'address' => $kyc->address,
-                'state' => $kyc->state,
-                'rejection_reason' => $kyc->rejection_reason,
-                'submitted_at' => $kyc->submitted_at?->format('M j, Y'),
-            ] : null,
-            'idTypes' => $this->acceptedIdTypes(),
-            'tiers' => KycProfile::TIERS,
-        ]);
-    }
+    return array_intersect_key($types, $allowed) ?: $types;
+}
 
+/** ID types accepted for tier 2 — any national ID other than BVN. */
+private function acceptedTier2IdTypes(): array
+{
+    $types = array_intersect_key(KycProfile::ID_TYPES, array_flip(KycProfile::TIER2_ID_TYPES));
+    $allowed = $this->acceptedIdTypes();
+    $filtered = array_intersect_key($types, $allowed);
+
+    return $filtered ?: $types;
+}
+
+public function show(Request $request)
+{
+    $kyc = $request->user()->kyc()->first();
+
+    return Inertia::render('Account/Kyc', [
+        'kyc' => $kyc ? [
+            'level' => $kyc->level,
+            'status' => $kyc->status,
+            'tier' => $kyc->tierLabel(),
+            'id_type' => $kyc->id_type,
+            'id_masked' => $kyc->id_masked,
+            'tier2_id_type' => $kyc->tier2_id_type,
+            'tier2_id_masked' => $kyc->tier2_id_masked,
+            'full_name' => $kyc->full_name,
+            'phone' => $kyc->phone,
+            'address' => $kyc->address,
+            'state' => $kyc->state,
+            'rejection_reason' => $kyc->rejection_reason,
+            'submitted_at' => $kyc->submitted_at?->format('M j, Y'),
+        ] : null,
+        'idTypes' => $this->acceptedTier2IdTypes(), // the selector now lives on tier 2
+        'tiers' => KycProfile::TIERS,
+    ]);
+}
     /**
      * Submit one tier at a time. Each step stands on its own, so a user can
      * finish at tier 1 and come back for 2 and 3 later (or never).
@@ -65,6 +78,18 @@ class KycController extends Controller
         $step = (int) $request->input('step', 1);
         $user = $request->user();
         $existing = $user->kyc()->first();
+
+        // Admin can opt into straight-through tier 1 approval — tier 1 is always BVN now.
+        $auto = (bool) \App\Support\Settings::get('kyc.auto_approve_tier1');
+        if ($step === 1 && $auto) {
+            $user->kyc()->update([
+                'status' => 'verified', 'level' => 1,
+                'reviewed_by' => 'auto', 'reviewed_at' => now(),
+            ]);
+            SecurityEvent::record($user, 'kyc_verified', $request);
+
+            return back()->with('status', 'Your identity is verified.');
+        }
 
         if ($step > 1 && ! $existing) {
             return back()->withErrors(['step' => 'Complete tier 1 first']);
@@ -113,42 +138,58 @@ class KycController extends Controller
     }
 
     /** Tier 1 — national ID and personal details. */
-    private function tier1(Request $request): array|\Illuminate\Http\RedirectResponse
-    {
-        $data = $request->validate([
-            'id_type' => ['required', Rule::in(array_keys($this->acceptedIdTypes()))],
-            'id_number' => ['required', 'string', 'max:32'],
-            'full_name' => ['required', 'string', 'max:180'],
-            'date_of_birth' => ['required', 'date', 'before:-16 years'],
-            'phone' => ['required', 'string', 'max:20'],
-        ]);
-
-        // Nigerian BVN/NIN are both 11 digits — catch typos before review.
-        $digits = preg_replace('/\D/', '', $data['id_number']);
-        if (\in_array($data['id_type'], KycProfile::NATIONAL_IDS, true) && \strlen($digits) !== 11) {
-            return back()->withErrors(['id_number' => strtoupper($data['id_type']).' must be 11 digits']);
-        }
-
-        return [
-            'id_type' => $data['id_type'],
-            'id_masked' => KycProfile::mask($data['id_number']),
-            'id_hash' => KycProfile::hashId($data['id_type'], $data['id_number']),
-            'full_name' => $data['full_name'],
-            'date_of_birth' => $data['date_of_birth'],
-            'phone' => $data['phone'],
-        ];
+    /** Tier 1 — BVN and personal details. Phone + BVN are the mandatory tier-1 pair. */
+private function tier1(Request $request): array|\Illuminate\Http\RedirectResponse
+{
+    if (! $this->acceptedTier1IdTypes()) {
+        return back()->withErrors(['id_type' => 'BVN verification is not currently accepted.']);
     }
 
-    /** Tier 2 — government ID document plus a selfie. */
-    private function tier2(Request $request): array|\Illuminate\Http\RedirectResponse
-    {
-        $request->validate([
-            'document' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
-            'selfie' => ['required', 'file', 'mimes:jpg,jpeg,png', 'max:5120'],
-        ]);
+    $data = $request->validate([
+        'id_number' => ['required', 'string', 'max:32'],
+        'full_name' => ['required', 'string', 'max:180'],
+        'date_of_birth' => ['required', 'date', 'before:-16 years'],
+        'phone' => ['required', 'string', 'max:20'],
+    ]);
 
-        return []; // files are attached by the caller
+    $digits = preg_replace('/\D/', '', $data['id_number']);
+    if (\strlen($digits) !== 11) {
+        return back()->withErrors(['id_number' => 'BVN must be 11 digits']);
     }
+
+    return [
+        'id_type' => 'bvn',
+        'id_masked' => KycProfile::mask($data['id_number']),
+        'id_hash' => KycProfile::hashId('bvn', $data['id_number']),
+        'full_name' => $data['full_name'],
+        'date_of_birth' => $data['date_of_birth'],
+        'phone' => $data['phone'],
+    ];
+}
+
+/** Tier 2 — any national ID other than BVN, plus a document photo and a selfie. */
+private function tier2(Request $request): array|\Illuminate\Http\RedirectResponse
+{
+    $allowed = $this->acceptedTier2IdTypes();
+
+    $data = $request->validate([
+        'id_type' => ['required', Rule::in(array_keys($allowed))],
+        'id_number' => ['required', 'string', 'max:32'],
+        'document' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+        'selfie' => ['required', 'file', 'mimes:jpg,jpeg,png', 'max:5120'],
+    ]);
+
+    $digits = preg_replace('/\D/', '', $data['id_number']);
+    if ($data['id_type'] === 'nin' && \strlen($digits) !== 11) {
+        return back()->withErrors(['id_number' => 'NIN must be 11 digits']);
+    }
+
+    return [
+        'tier2_id_type' => $data['id_type'],
+        'tier2_id_masked' => KycProfile::mask($data['id_number']),
+        'tier2_id_hash' => KycProfile::hashId($data['id_type'], $data['id_number']),
+    ];
+}
 
     /** Tier 3 — proof of address. */
     private function tier3(Request $request): array|\Illuminate\Http\RedirectResponse

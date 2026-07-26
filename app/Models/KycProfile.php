@@ -7,12 +7,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class KycProfile extends Model
 {
-    protected $fillable = [
-        'user_id', 'level', 'status', 'id_type', 'id_masked', 'id_hash',
-        'full_name', 'date_of_birth', 'phone', 'address', 'state', 'country',
-        'document_ref', 'selfie_ref', 'address_proof_ref', 'address_proof_type', 'provider', 'provider_ref',
-        'rejection_reason', 'reviewed_by', 'submitted_at', 'reviewed_at',
-    ];
+protected $fillable = [
+    'user_id', 'level', 'status', 'id_type', 'id_masked', 'id_hash',
+    'tier2_id_type', 'tier2_id_masked', 'tier2_id_hash',
+    'full_name', 'date_of_birth', 'phone', 'address', 'state', 'country',
+    'document_ref', 'selfie_ref', 'address_proof_ref', 'address_proof_type', 'provider', 'provider_ref',
+    'rejection_reason', 'reviewed_by', 'submitted_at', 'reviewed_at',
+];
+
+/** Tier 1 accepts BVN only. */
+public const TIER1_ID_TYPES = ['bvn'];
+
+/** Tier 2 accepts any *other* national ID — BVN was already collected at tier 1. */
+public const TIER2_ID_TYPES = ['nin', 'passport', 'drivers_license', 'voters_card'];
 
     protected $casts = [
         'level' => 'integer',
@@ -58,14 +65,24 @@ class KycProfile extends Model
     }
 
     /** Other accounts that submitted the same national ID — an account-farming signal. */
-    public function duplicates()
-    {
-        return static::where('id_hash', $this->id_hash)
-            ->whereNotNull('id_hash')
-            ->where('user_id', '!=', $this->user_id)
-            ->get();
+    /** Other accounts that submitted the same national ID (tier 1 or tier 2) — an account-farming signal. */
+public function duplicates()
+{
+    if (! $this->id_hash && ! $this->tier2_id_hash) {
+        return static::whereRaw('1 = 0')->get();
     }
 
+    return static::where('user_id', '!=', $this->user_id)
+        ->where(function ($q) {
+            if ($this->id_hash) {
+                $q->orWhere('id_hash', $this->id_hash);
+            }
+            if ($this->tier2_id_hash) {
+                $q->orWhere('tier2_id_hash', $this->tier2_id_hash);
+            }
+        })
+        ->get();
+}
     public function isVerified(): bool
     {
         return $this->status === 'verified';
