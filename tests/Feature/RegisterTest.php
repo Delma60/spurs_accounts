@@ -23,6 +23,7 @@ class RegisterTest extends TestCase
         $response = $this->post('/register', [
             'name' => 'Ada Lovelace',
             'email' => 'ada@spurs.com.ng',
+            'phone' => '+2348012345678',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
         ]);
@@ -37,6 +38,7 @@ class RegisterTest extends TestCase
         $this->post('/register', [
             'name' => 'Bad Match',
             'email' => 'bad@spurs.com.ng',
+            'phone' => '+2348012345678',
             'password' => 'Password123!',
             'password_confirmation' => 'different',
         ])->assertSessionHasErrors('password');

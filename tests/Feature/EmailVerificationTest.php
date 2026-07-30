@@ -38,6 +38,7 @@ class EmailVerificationTest extends TestCase
         $this->post('/register', [
             'name' => 'Ada',
             'email' => 'ada@spurs.com.ng',
+            'phone' => '+2348012345678',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
         ]);

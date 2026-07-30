@@ -6,6 +6,7 @@ export default function Register() {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
+        phone: '',
         password: '',
         password_confirmation: '',
     });
@@ -38,6 +39,14 @@ export default function Register() {
                     value={data.email}
                     onChange={(e) => setData('email', e.target.value)}
                     error={errors.email}
+                />
+                <Field
+                    label="Phone number"
+                    type="tel"
+                    autoComplete="tel"
+                    value={data.phone}
+                    onChange={(e) => setData('phone', e.target.value)}
+                    error={errors.phone}
                 />
                 <Field
                     label="Password"

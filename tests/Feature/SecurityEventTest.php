@@ -24,6 +24,7 @@ class SecurityEventTest extends TestCase
         $this->post('/register', [
             'name' => 'Grace',
             'email' => 'grace@spurs.com.ng',
+            'phone' => '+2348012345678',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
         ]);
