@@ -36,9 +36,8 @@ class Settings
         'referral.bonus_amount' => ['Referral', 'Referrer reward (₦)', 'int', 0, 'Naira credited to the referrer\'s wallet when someone they invited signs up.', true],
         'referral.reward_referee' => ['Referral', 'Also reward the new user', 'bool', false, 'Give the invited user the same reward on sign-up, not just the referrer.', true],
 
-        'bonus.first_deposit_enabled' => ['Bonuses', 'First-deposit bonus', 'bool', false, 'Credit a bonus the first time a user funds their wallet.', true],
-        'bonus.first_deposit_amount' => ['Bonuses', 'First-deposit bonus (₦)', 'int', 0, 'Naira credited on a user\'s first wallet deposit.', true],
-        'bonus.first_deposit_min' => ['Bonuses', 'Minimum qualifying deposit (₦)', 'int', 0, 'The first deposit must be at least this much to earn the bonus.', true],
+        // Note: the first-deposit bonus is configured on the Wallet service, since
+        // Wallet is where deposits happen and where the bonus is credited.
 
         'trust.band_excellent' => ['Trust score', 'Excellent band (min)', 'int', 80, 'Accounts scoring at or above this are rated "excellent".', true],
         'trust.band_good' => ['Trust score', 'Good band (min)', 'int', 65, 'At or above this (but below excellent) is "good".', true],
