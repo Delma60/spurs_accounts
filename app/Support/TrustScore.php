@@ -82,11 +82,12 @@ class TrustScore
 
     public static function band(int $score): string
     {
+        // Thresholds are admin-tunable (Settings → Trust score).
         return match (true) {
-            $score >= 80 => 'excellent',
-            $score >= 65 => 'good',
-            $score >= 45 => 'fair',
-            $score >= 25 => 'poor',
+            $score >= (int) Settings::get('trust.band_excellent') => 'excellent',
+            $score >= (int) Settings::get('trust.band_good') => 'good',
+            $score >= (int) Settings::get('trust.band_fair') => 'fair',
+            $score >= (int) Settings::get('trust.band_poor') => 'poor',
             default => 'at risk',
         };
     }

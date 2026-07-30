@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     House, User, ShieldCheck, Blocks, LogOut, Mail, Check,
-    ChevronRight, ChevronLeft, BadgeCheck, Wallet, ArrowLeftRight, RefreshCw,
+    ChevronRight, ChevronLeft, BadgeCheck, Wallet, ArrowLeftRight, RefreshCw, Gift,
 } from 'lucide-react';
 
 /**
@@ -16,6 +16,7 @@ export const NAV = [
     { id: 'security', href: '/me/security', label: 'Security & sign-in', Icon: ShieldCheck, desc: 'Password and protection' },
     { id: 'kyc', href: '/me/kyc', label: 'Identity verification', Icon: BadgeCheck, desc: 'Verify to unlock full access' },
     { id: 'payments', href: '/me/payments', label: 'Payments & subscriptions', Icon: Wallet, desc: 'Balances, transactions and recurring payments' },
+    { id: 'referrals', href: '/me/referrals', label: 'Invite & earn', Icon: Gift, desc: 'Share your code and earn rewards' },
     { id: 'apps', href: '/me/apps', label: 'Connected apps', Icon: Blocks, desc: 'Apps with account access' },
 ];
 

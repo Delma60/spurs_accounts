@@ -40,6 +40,11 @@ class Settings
         'bonus.first_deposit_amount' => ['Bonuses', 'First-deposit bonus (₦)', 'int', 0, 'Naira credited on a user\'s first wallet deposit.', true],
         'bonus.first_deposit_min' => ['Bonuses', 'Minimum qualifying deposit (₦)', 'int', 0, 'The first deposit must be at least this much to earn the bonus.', true],
 
+        'trust.band_excellent' => ['Trust score', 'Excellent band (min)', 'int', 80, 'Accounts scoring at or above this are rated "excellent".', true],
+        'trust.band_good' => ['Trust score', 'Good band (min)', 'int', 65, 'At or above this (but below excellent) is "good".', true],
+        'trust.band_fair' => ['Trust score', 'Fair band (min)', 'int', 45, 'At or above this (but below good) is "fair".', true],
+        'trust.band_poor' => ['Trust score', 'Poor band (min)', 'int', 25, 'At or above this is "poor"; below it is "at risk".', true],
+
         'kyc.required_tier' => ['KYC', 'Tier required for payouts', 'int', 1, 'Minimum verified tier before a user can withdraw or receive payouts.', false],
         'kyc.id_types' => ['KYC', 'Accepted ID types', 'string', 'bvn,nin,passport,drivers_license,voters_card', 'Comma-separated. BVN/NIN are the Nigerian national IDs.', true],
         'kyc.auto_approve_tier1' => ['KYC', 'Auto-approve tier 1', 'bool', false, 'Approve BVN/NIN submissions automatically instead of manual review.', true],
