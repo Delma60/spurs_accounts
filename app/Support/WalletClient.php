@@ -36,6 +36,48 @@ class WalletClient
         }
     }
 
+    private static function post(string $path, array $body): ?array
+    {
+        $secret = (string) config('spurs.internal_secret');
+        if ($secret === '') {
+            return null;
+        }
+
+        try {
+            $res = Http::withHeaders(['x-internal-secret' => $secret])
+                ->timeout(6)
+                ->post(self::base().$path, $body);
+
+            return $res->successful() ? $res->json() : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Credit a user's wallet with a platform bonus. Idempotent on `reference`:
+     * the wallet pays a given reference exactly once, so a retried call is safe.
+     * `amount` is in the asset's minor units (kobo for NGN). Returns the wallet's
+     * response on success, or null if it was unreachable/rejected.
+     *
+     * @param array{source?: string, description?: string} $opts
+     */
+    public static function credit(string $userId, string $asset, int $amount, string $reference, array $opts = []): ?array
+    {
+        if ($amount <= 0) {
+            return null;
+        }
+
+        return self::post('/api/private/wallet/credit', [
+            'user' => $userId,
+            'asset' => $asset,
+            'amount' => $amount,
+            'reference' => $reference,
+            'source' => $opts['source'] ?? 'referral_bonus',
+            'description' => $opts['description'] ?? 'Bonus',
+        ]);
+    }
+
     /** Balances across every asset the user holds. */
     public static function balances(string $userId): array
     {

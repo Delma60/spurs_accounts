@@ -20,6 +20,9 @@ class AccountController extends Controller
             'user' => [
                 'name' => $user->name,
                 'email' => $user->email,
+                'phone' => $user->phone,
+                'country' => $user->country,
+                'currency' => $user->currency,
                 'email_verified' => $user->hasVerifiedEmail(),
                 'created_at' => $user->created_at?->format('M j, Y'),
             ],
@@ -79,11 +82,45 @@ class AccountController extends Controller
         ]);
     }
 
+    /** Invite & earn (/me/referrals) — the user's code, share link and rewards. */
+    public function referrals(Request $request)
+    {
+        $user = $request->user();
+        $code = \App\Support\Referral::ensureCode($user);
+        $enabled = (bool) \App\Support\Settings::get('referral.enabled');
+
+        $rewards = \App\Models\ReferralReward::where('referrer_id', $user->getKey())
+            ->with('referee:id,name,created_at')
+            ->latest()
+            ->get();
+
+        $earnedMinor = (int) $rewards->where('status', 'paid')->sum('amount_minor');
+
+        return Inertia::render('Account/Referrals', [
+            ...$this->shell($request),
+            'referral' => [
+                'enabled' => $enabled,
+                'code' => $code,
+                'link' => url('/register?ref='.$code),
+                'bonus' => (int) \App\Support\Settings::get('referral.bonus_amount'),
+                'invited' => $rewards->count(),
+                'earnedNaira' => intdiv($earnedMinor, 100),
+                'people' => $rewards->map(fn ($r) => [
+                    'name' => $r->referee?->name ?? 'New user',
+                    'joined' => $r->referee?->created_at?->format('M j, Y'),
+                    'status' => $r->status,
+                    'amountNaira' => intdiv((int) $r->amount_minor, 100),
+                ])->values(),
+            ],
+        ]);
+    }
+
     /** Update the user's personal info. */
     public function updateProfile(Request $request)
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:32', 'regex:/^\+?[0-9 ()-]{7,}$/'],
         ]);
 
         $request->user()->update($data);

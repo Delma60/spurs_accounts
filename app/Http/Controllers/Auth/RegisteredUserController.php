@@ -24,7 +24,15 @@ class RegisteredUserController extends Controller
             $request->session()->put('url.intended', $to);
         }
 
-        return Inertia::render('Auth/Register');
+        // Remember a referral code from the invite link (?ref=CODE) so we can
+        // still credit the referrer after the form round-trips.
+        if ($ref = $request->query('ref')) {
+            $request->session()->put('referral.code', (string) $ref);
+        }
+
+        return Inertia::render('Auth/Register', [
+            'referral' => $request->session()->get('referral.code'),
+        ]);
     }
 
     /** Register a new Spurs account and start the shared SSO session. */
@@ -59,6 +67,12 @@ class RegisteredUserController extends Controller
         // Grant the platform's default role(s) so every new account has a
         // baseline identity that travels across all of Spurs Cloud.
         $user->syncRoles(\App\Models\Role::defaultRoleNames());
+
+        // Give them their own referral code, and — if they arrived via someone's
+        // invite — link and reward the referrer. Best-effort: never blocks sign-up.
+        \App\Support\Referral::ensureCode($user);
+        $refCode = $request->input('ref') ?: $request->session()->pull('referral.code');
+        \App\Support\Referral::onSignup($user, $refCode);
 
         event(new Registered($user));
 

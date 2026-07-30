@@ -2,13 +2,14 @@ import { useForm, router } from '@inertiajs/react';
 import AuthShell from '@/Components/AuthShell';
 import Field from '@/Components/Field';
 
-export default function Register() {
+export default function Register({ referral }) {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
         phone: '',
         password: '',
         password_confirmation: '',
+        ref: referral || '',
     });
 
     const submit = (e) => {
@@ -21,9 +22,13 @@ export default function Register() {
             <div className="head">
                 <h1>Create your Spurs account</h1>
                 <p>One account for everything across Spurs Cloud</p>
+                {referral && (
+                    <p className="note">You were invited with code <strong>{referral}</strong></p>
+                )}
             </div>
 
             <form onSubmit={submit} noValidate>
+                <input type="hidden" name="ref" value={data.ref} />
                 <Field
                     label="Full name"
                     autoComplete="name"

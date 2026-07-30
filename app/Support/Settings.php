@@ -32,6 +32,14 @@ class Settings
         'fraud.shared_ip_threshold' => ['Fraud', 'Shared-IP accounts threshold', 'int', 3, 'Flag when this many other accounts share the sign-in IP (account farming).', true],
         'fraud.disposable_domains' => ['Fraud', 'Extra disposable email domains', 'text', '', 'One domain per line, added to the built-in throwaway-inbox list.', true],
 
+        'referral.enabled' => ['Referral', 'Enable referrals', 'bool', false, 'Let users invite others with a referral link and earn a reward.', true],
+        'referral.bonus_amount' => ['Referral', 'Referrer reward (₦)', 'int', 0, 'Naira credited to the referrer\'s wallet when someone they invited signs up.', true],
+        'referral.reward_referee' => ['Referral', 'Also reward the new user', 'bool', false, 'Give the invited user the same reward on sign-up, not just the referrer.', true],
+
+        'bonus.first_deposit_enabled' => ['Bonuses', 'First-deposit bonus', 'bool', false, 'Credit a bonus the first time a user funds their wallet.', true],
+        'bonus.first_deposit_amount' => ['Bonuses', 'First-deposit bonus (₦)', 'int', 0, 'Naira credited on a user\'s first wallet deposit.', true],
+        'bonus.first_deposit_min' => ['Bonuses', 'Minimum qualifying deposit (₦)', 'int', 0, 'The first deposit must be at least this much to earn the bonus.', true],
+
         'kyc.required_tier' => ['KYC', 'Tier required for payouts', 'int', 1, 'Minimum verified tier before a user can withdraw or receive payouts.', false],
         'kyc.id_types' => ['KYC', 'Accepted ID types', 'string', 'bvn,nin,passport,drivers_license,voters_card', 'Comma-separated. BVN/NIN are the Nigerian national IDs.', true],
         'kyc.auto_approve_tier1' => ['KYC', 'Auto-approve tier 1', 'bool', false, 'Approve BVN/NIN submissions automatically instead of manual review.', true],

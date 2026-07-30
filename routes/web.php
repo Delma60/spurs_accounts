@@ -29,6 +29,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/me/security', [AccountController::class, 'security'])->name('me.security');
     Route::get('/me/apps', [AccountController::class, 'apps'])->name('me.apps');
     Route::get('/me/payments', [AccountController::class, 'payments'])->name('me.payments');
+    Route::get('/me/referrals', [AccountController::class, 'referrals'])->name('me.referrals');
     Route::get('/me/kyc', [\App\Http\Controllers\KycController::class, 'show'])->name('me.kyc');
     Route::post('/me/kyc', [\App\Http\Controllers\KycController::class, 'store'])->name('me.kyc.store');
     Route::put('/me/profile', [AccountController::class, 'updateProfile'])->name('me.profile');
