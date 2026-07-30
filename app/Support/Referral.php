@@ -83,8 +83,6 @@ class Referral
     /** Credit the referrer, tracked in the ledger so it can only happen once. */
     private static function payReferrer(User $referrer, User $referee, int $amountMinor): void
     {
-        $reference = "referral:{$referee->id}";
-
         // Unique referee_id makes this the idempotency guard: if a row already
         // exists we've handled this referee before.
         $reward = ReferralReward::firstOrCreate(
@@ -94,23 +92,59 @@ class Referral
                 'amount_minor' => $amountMinor,
                 'currency' => self::REWARD_ASSET,
                 'status' => 'pending',
-                'reference' => $reference,
+                'reference' => "referral:{$referee->id}",
             ],
         );
 
-        if ($reward->status === 'paid') {
-            return;
+        self::settle($reward);
+    }
+
+    /**
+     * Re-attempt payouts that didn't land (wallet was down, returned an empty
+     * body, etc.). Safe to run on a schedule: the wallet credit is idempotent on
+     * the reward's reference, so a reward that actually did credit — but which we
+     * recorded as failed — simply reconciles to "paid" without paying twice.
+     *
+     * @return array{attempted:int, paid:int, failed:int}
+     */
+    public static function retryFailed(int $limit = 100): array
+    {
+        $rewards = ReferralReward::whereIn('status', ['failed', 'pending'])
+            ->orderBy('id')
+            ->limit($limit)
+            ->get();
+
+        $paid = 0;
+        foreach ($rewards as $reward) {
+            if (self::settle($reward)) {
+                $paid++;
+            }
         }
 
-        $ok = WalletClient::credit($referrer->id, self::REWARD_ASSET, $amountMinor, $reference, [
-            'source' => 'referral_bonus',
-            'description' => 'Referral reward',
-        ]);
+        return ['attempted' => $rewards->count(), 'paid' => $paid, 'failed' => $rewards->count() - $paid];
+    }
+
+    /** Credit a reward's referrer and record the outcome. Returns true if paid. */
+    private static function settle(ReferralReward $reward): bool
+    {
+        if ($reward->status === 'paid') {
+            return true;
+        }
+
+        $ok = WalletClient::credit(
+            (string) $reward->referrer_id,
+            $reward->currency,
+            (int) $reward->amount_minor,
+            $reward->reference,
+            ['source' => 'referral_bonus', 'description' => 'Referral reward'],
+        );
 
         $reward->forceFill([
             'status' => $ok ? 'paid' : 'failed',
-            'paid_at' => $ok ? now() : null,
+            'paid_at' => $ok ? now() : $reward->paid_at,
         ])->save();
+
+        return (bool) $ok;
     }
 
     /** Optionally reward the new user too, on their own idempotent reference. */
