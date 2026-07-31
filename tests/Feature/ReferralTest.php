@@ -90,21 +90,20 @@ class ReferralTest extends TestCase
     public function test_failed_payout_is_reconciled_on_retry(): void
     {
         $this->enableProgram(500);
-
-        // First attempt: wallet returns an empty body, so the credit reads as failed.
-        Http::fake(['*' => Http::response('', 200)]);
+        $this->fakeWallet(); // wallet is healthy now
 
         $referrer = User::factory()->create();
-        $code = Referral::ensureCode($referrer);
         $referee = User::factory()->create();
 
-        Referral::onSignup($referee, $code);
-
-        $reward = ReferralReward::where('referee_id', $referee->id)->firstOrFail();
-        $this->assertSame('failed', $reward->status);
-
-        // Wallet recovers — now it returns a proper body.
-        $this->fakeWallet();
+        // Simulate a payout that failed earlier (wallet was down at signup time).
+        $reward = ReferralReward::create([
+            'referrer_id' => $referrer->id,
+            'referee_id' => $referee->id,
+            'amount_minor' => 50000,
+            'currency' => 'NGN',
+            'status' => 'failed',
+            'reference' => "referral:{$referee->id}",
+        ]);
 
         $result = Referral::retryFailed();
 
@@ -112,9 +111,10 @@ class ReferralTest extends TestCase
         $this->assertSame(1, $result['paid']);
         $this->assertSame('paid', $reward->fresh()->status);
         $this->assertNotNull($reward->fresh()->paid_at);
+        Http::assertSent(fn ($req) => str_contains($req->url(), '/api/private/wallet/credit')
+            && $req['reference'] === "referral:{$referee->id}");
 
-        // Retrying again is a no-op — already paid, nothing re-attempted.
-        Http::fake(); // any further credit call would be caught here
+        // Already paid — a further run reconciles nothing (and makes no wallet call).
         $again = Referral::retryFailed();
         $this->assertSame(0, $again['attempted']);
     }

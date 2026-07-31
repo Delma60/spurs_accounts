@@ -28,7 +28,7 @@ class OidcController extends Controller
             'subject_types_supported' => ['public'],
             'id_token_signing_alg_values_supported' => ['RS256'],
             'scopes_supported' => ['openid', 'profile', 'email', 'roles'],
-            'claims_supported' => ['sub', 'name', 'phone_number', 'country', 'currency', 'email', 'email_verified', 'roles', 'permissions'],
+            'claims_supported' => ['sub', 'name', 'account_type', 'phone_number', 'country', 'currency', 'email', 'email_verified', 'roles', 'permissions'],
             'token_endpoint_auth_methods_supported' => ['client_secret_basic', 'client_secret_post'],
             'code_challenge_methods_supported' => ['S256', 'plain'],
         ]);
@@ -71,6 +71,7 @@ class OidcController extends Controller
 
         if ($user->tokenCan('profile')) {
             $claims['name'] = $user->name;
+            $claims['account_type'] = $user->account_type;
             $claims['phone_number'] = $user->phone;
             // Home country + default currency, so apps like Wallet can start a
             // new user on their own currency without asking.

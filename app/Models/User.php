@@ -153,11 +153,15 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $fillable = [
         'name',
         'email',
+        'account_type',
         'phone',
         'country',
         'currency',
         'password',
     ];
+
+    /** The kinds of Spurs identity. Apps tailor themselves to these. */
+    public const ACCOUNT_TYPES = ['personal', 'business', 'merchant', 'developer'];
 
     /**
      * The attributes that should be hidden for serialization.

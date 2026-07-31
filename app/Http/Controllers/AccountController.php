@@ -20,6 +20,7 @@ class AccountController extends Controller
             'user' => [
                 'name' => $user->name,
                 'email' => $user->email,
+                'account_type' => $user->account_type,
                 'phone' => $user->phone,
                 'country' => $user->country,
                 'currency' => $user->currency,

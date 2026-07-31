@@ -46,6 +46,7 @@ class RegisteredUserController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
+            'account_type' => ['nullable', 'in:'.implode(',', User::ACCOUNT_TYPES)],
             'phone' => ['required', 'string', 'max:32', 'regex:/^\+?[0-9 ()-]{7,}$/'],
             'password' => ['required', 'confirmed', Password::min($minLength)->letters()->numbers()],
         ]);
@@ -58,6 +59,7 @@ class RegisteredUserController extends Controller
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
+            'account_type' => $data['account_type'] ?? 'personal',
             'phone' => $data['phone'],
             'country' => $country,
             'currency' => \App\Support\Currency::forCountry($country),

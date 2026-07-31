@@ -2,10 +2,18 @@ import { useForm, router } from '@inertiajs/react';
 import AuthShell from '@/Components/AuthShell';
 import Field from '@/Components/Field';
 
+const ACCOUNT_TYPES = [
+    { value: 'personal', label: 'Personal', hint: 'For you' },
+    { value: 'business', label: 'Business', hint: 'A company' },
+    { value: 'merchant', label: 'Merchant', hint: 'Sell online' },
+    { value: 'developer', label: 'Developer', hint: 'Build on Spurs' },
+];
+
 export default function Register({ referral }) {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
+        account_type: 'personal',
         phone: '',
         password: '',
         password_confirmation: '',
@@ -29,6 +37,26 @@ export default function Register({ referral }) {
 
             <form onSubmit={submit} noValidate>
                 <input type="hidden" name="ref" value={data.ref} />
+
+                <div className="acct-type">
+                    <span className="acct-type__label">I&apos;m signing up as</span>
+                    <div className="acct-type__opts">
+                        {ACCOUNT_TYPES.map((t) => (
+                            <button
+                                key={t.value}
+                                type="button"
+                                className={`acct-type__opt${data.account_type === t.value ? ' is-active' : ''}`}
+                                onClick={() => setData('account_type', t.value)}
+                                aria-pressed={data.account_type === t.value}
+                            >
+                                <span className="acct-type__name">{t.label}</span>
+                                <span className="acct-type__hint">{t.hint}</span>
+                            </button>
+                        ))}
+                    </div>
+                    {errors.account_type && <p className="field-error">{errors.account_type}</p>}
+                </div>
+
                 <Field
                     label="Full name"
                     autoComplete="name"

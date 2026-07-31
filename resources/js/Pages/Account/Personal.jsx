@@ -42,6 +42,10 @@ export default function Personal({ user, kyc }) {
                             : <span className="badge badge--warn">Unverified</span>}
                     </div>
                     <div className="info-row">
+                        <span className="info-row__label">Account type</span>
+                        <span className="info-row__value" style={{ textTransform: 'capitalize' }}>{user.account_type ?? 'personal'}</span>
+                    </div>
+                    <div className="info-row">
                         <span className="info-row__label">Member since</span>
                         <span className="info-row__value">{user.created_at}</span>
                     </div>
